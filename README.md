@@ -1,9 +1,18 @@
 # Flow-Tech Systems — Motion Website (v10)
 
-Static site. No build step — Vercel serves the files as-is.
+Static site. No build step — Vercel serves the files as-is, with clean URLs (`/market` serves `market.html`).
 
-- `index.html` redirects to `Flow-Tech v10 - 00 Home.dc.html`
-- Pages: 00 Overview, 01 The Proof (`Flow-Tech Home v10.dc.html`), 02 Demand Intelligence, 03 Channels Expansion, 04 Innovation Lab, Privacy
-- `support.js` / `image-slot.js` are the page runtime; `assets/marbots/` holds the agent images
+| Path | File | Nav label |
+| --- | --- | --- |
+| `/` | `index.html` | 00 Overview |
+| `/proof` | `proof.html` | 01 The Proof |
+| `/market` | `market.html` | 02 The Market |
+| `/channels` | `channels.html` | 03 The Channels |
+| `/whats-next` | `whats-next.html` | 04 What's Next |
+| `/privacy` | `privacy.html` | Privacy & Cookies |
 
-Local preview: `python3 -m http.server 8000` and open http://localhost:8000
+`support.js` / `image-slot.js` are the page runtime; `assets/marbots/` holds the agent images.
+
+`vercel.json` sends `X-Robots-Tag: noindex` so the review deployment stays out of search results — remove that header when the site goes public.
+
+Local preview (needs clean-URL support): `npx serve .` and open http://localhost:3000
