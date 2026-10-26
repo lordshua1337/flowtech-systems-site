@@ -1,0 +1,9 @@
+27-ROLE MARKETING TOOLKIT
+
+1. Extract this ZIP.
+2. Extract marketing-company-pack-compact.tar.gz (on a Mac, double-click it).
+3. Open marketing-company-pack/START-HERE.md.
+
+The inner archive restores all 3,953 exact validated files. Standard archive hardlinks represent duplicate content to reduce download size. Treat the reference pack as immutable; copy files separately when editing.
+
+Validated offline toolkit, not 27 deployed autonomous agents. Native 3D, real-browser/assistive-technology testing and live integrations remain unverified. New briefs require real model/human authoring and review. README.md lists dependencies.
