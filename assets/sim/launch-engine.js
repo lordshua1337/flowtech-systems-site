@@ -63,6 +63,7 @@ export function start(ctx) {
   const arts = new Map(); // id -> {el, st}
   const S = { touched: new Set(), gates: 0, repaired: 0, done: false, sealed: false, steps: 0 };
   root.__sim = S; S.rt = rt;
+  Object.defineProperty(S, 'paused', { get: () => rt.paused }); Object.defineProperty(S, 'running', { get: () => !rt.dead });
   const stats = () => {
     const live = [...arts.values()].filter(a => a.st !== 'stale' && a.st !== 'superseded' && a.st !== 'rejected').length, kept = arts.size - live;
     statsEl.innerHTML = chip(arts.size + ' artifacts', 'b') + chip(S.gates + ' of 3 gates cleared', S.gates ? 'g' : '') + (S.repaired ? chip(S.repaired + ' claims repaired', 'a') : '') + (kept ? chip(kept + ' kept for audit', '') : '');
@@ -140,14 +141,14 @@ export function start(ctx) {
   const setClock = t => { clockEl.textContent = t; clockBase = hhmm(t); feedN = 0; };
   const setCard = st => {
     const i = st.lead, extra = (st.extra || []).map(alias).join(' · ');
-    cardEl.innerHTML = `<img src="${PORT[i]}" alt=""><div class="tx"><div class="who"><span>${esc(alias(i))}${extra ? ` <em>+ ${esc(extra)}</em>` : ` <em>· ${esc(role(i))}</em>`}</span>${chip(st.status || 'Running', st.status === 'Rejected' ? 'r' : st.status === 'Reworking' || st.status === 'Rebuilding' ? 'a' : 'b')}</div><h5>${esc(st.title)}</h5><p>${esc(st.text)}</p></div>`;
+    cardEl.innerHTML = `<img src="${PORT[i]}" alt="" data-agent="${i}"><div class="tx"><div class="who"><span data-agent="${i}">${esc(alias(i))}${extra ? ` <em>+ ${esc(extra)}</em>` : ` <em>· ${esc(role(i))}</em>`}</span>${chip(st.status || 'Running', st.status === 'Rejected' ? 'r' : st.status === 'Reworking' || st.status === 'Rebuilding' ? 'a' : 'b')}</div><h5>${esc(st.title)}</h5><p>${esc(st.text)}</p></div>`;
     cardEl.classList.remove('fts-pop'); void cardEl.offsetWidth; cardEl.classList.add('fts-pop');
     srEl.textContent = alias(i) + ': ' + st.title;
   };
   const feed = (node, text, artId, kind) => {
     const li = document.createElement('li'); if (kind) li.dataset.k = kind;
     feedN++; const t = fmt(clockBase + feedN * 3);
-    li.innerHTML = `<time>${t}</time><img src="${PORT[node]}" alt=""><span><b>${esc(alias(node))}</b> ${esc(text)}${artId ? ` <code>${esc(SC.art[artId].file)}</code>` : ''}</span>`;
+    li.innerHTML = `<time>${t}</time><img src="${PORT[node]}" alt="" data-agent="${node}"><span><b data-agent="${node}">${esc(alias(node))}</b> ${esc(text)}${artId ? ` <code>${esc(SC.art[artId].file)}</code>` : ''}</span>`;
     feedEl.insertBefore(li, feedEl.firstChild); while (feedEl.children.length > 7) feedEl.lastChild.remove();
   };
   const phaseCount = SC.phases.map((_, p) => SC.steps.filter(s => s.phase === p).length);
@@ -162,7 +163,7 @@ export function start(ctx) {
     if (arts.has(id)) return; const a = SC.art[id]; if (!a) return;
     const v = /_v(\d+)/.exec(a.file), el = document.createElement('div');
     el.className = 'fts-art fresh'; el.dataset.s = 'draft'; el.dataset.id = id;
-    el.innerHTML = `<div class="top"><img src="${PORT[a.owner]}" alt=""><span>${esc(a.type)}</span><span class="v">v${v ? v[1] : 1}</span></div><div class="fn fts-mono">${esc(a.file).replace(/([_.-])/g, '$1<wbr>')}</div><div class="bt"><span data-b></span><span class="dg fts-mono">#${digest(id)}</span></div>`;
+    el.innerHTML = `<div class="top"><img src="${PORT[a.owner]}" alt="" data-agent="${a.owner}"><span>${esc(a.type)}</span><span class="v">v${v ? v[1] : 1}</span></div><div class="fn fts-mono">${esc(a.file).replace(/([_.-])/g, '$1<wbr>')}</div><div class="bt"><span data-b></span><span class="dg fts-mono">#${digest(id)}</span></div>`;
     gridEl.appendChild(el); arts.set(id, { el, st: 'draft' }); paintBadge(id); stats();
     setTimeout(() => el.classList.remove('fresh'), 1500 / rt.speed + 400);
   };
@@ -263,7 +264,7 @@ export function start(ctx) {
     else { rings.forEach(r => { if (r && r.anim) { r.anim.cancel(); r.anim = null; } }); }
     S.done = true; ctx.onEnd(mode);
   };
-  const onKey = e => { if (e.key === 'Escape' && !rt.dead) { e.preventDefault(); finish('stopped'); } };
+  const onKey = e => { if (e.key === 'Escape' && !rt.dead && !(window.FTAgents && window.FTAgents.isOpen())) { e.preventDefault(); finish('stopped'); } };
   document.addEventListener('keydown', onKey, true);
 
   runEl.addEventListener('click', e => {
@@ -277,6 +278,8 @@ export function start(ctx) {
     else if (t.hasAttribute('data-again')) ctx.restart();
   });
   shelfEl.onclick = e => { if (e.target.closest('[data-again]')) ctx.restart(); };
+  // The agent card pauses the run while it is open, then puts it back the way it found it.
+  S.setPaused = on => { if (rt.dead || rt.paused === on) return; rt.paused = on; runEl.toggleAttribute('data-paused', on); const b = runEl.querySelector('[data-pause]'); if (b) { b.setAttribute('aria-pressed', String(on)); b.querySelector('span').textContent = on ? 'Resume' : 'Pause'; } eachRingAnim(a => on ? a.pause() : a.play()); };
 
   // go
   raf = requestAnimationFrame(frame);
